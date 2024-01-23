@@ -1,21 +1,19 @@
-from flask import Flask, jsonify
-from flask_sqlalchemy import SQLAlchemy
+from database import db
+from flask import Flask
+from models.user import User
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "_app_secrete_key"
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
+app.config['SECRET_KEY'] = "your_secret_key"
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 
-db = SQLAlchemy(app)
-
-
-@app.route("/info", methods=["GET"])
-def info():
-    return jsonify({
-        "status": "OK",
-        "version": "1.0.0",
-        "API_name": "authentication-flask-api"
-    })
+db.init_app(app)
+# Session <- conexão ativa
 
 
-if __name__ == "__main__":
+@app.route("/hello-world", methods=["GET"])
+def hello_world():
+    return "Hello world"
+
+
+if __name__ == '__main__':
     app.run(debug=True)
