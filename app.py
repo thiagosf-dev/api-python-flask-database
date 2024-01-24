@@ -73,6 +73,14 @@ def read_user(id_user):
     return jsonify({"message": "Usuário atualizado com sucesso"})
 
 
+@app.route("/users", methods=["GET"])
+@login_required
+def read_users():
+    users = db.session.query(User).order_by(User.username).all()
+    users_list = [{"id": user.id, "username": user.username} for user in users]
+    return jsonify(users_list)
+
+
 @app.route("/user/<int:id_user>", methods=["DELETE"])
 @login_required
 def delete_user(id_user):
