@@ -9,3 +9,9 @@ Flask-Login==0.6.2
 
 # Debug Server
 Werkzeug==2.3.0
+
+# MySQL
+pymysql==1.1.0
+
+# Hash & Criptography
+cryptography==41.0.7
