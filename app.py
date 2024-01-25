@@ -1,3 +1,4 @@
+import bcrypt
 from database import db
 from flask import Flask, jsonify, request
 from flask_login import (LoginManager, current_user, login_required,
@@ -24,15 +25,16 @@ def load_user(user_id):
 @app.route("/login", methods=["POST"])
 def login():
     data = request.json
-    username = data.get("username")
-    password = data.get("password")
 
-    if not username or not password:
+    if not data.get("username") or not data.get("password"):
         return jsonify({"message": "O username e o password devem ser informados"}), 400
+
+    username = data.get("username")
+    password = str.encode(data.get("password"))
 
     user = User.query.filter_by(username=username).first()
 
-    if not user or not user.password == password:
+    if not user or not bcrypt.checkpw(password, str.encode(user.password)):
         return jsonify({"message": "Credenciais inválidas"}), 401
 
     login_user(user)
@@ -51,12 +53,15 @@ def logout():
 def create_user():
     data = request.json
     username = data.get("username")
-    password = data.get("password")
+    # password = data.get("password")
+    password = bcrypt.hashpw(str.encode(
+        data.get("password")), bcrypt.gensalt())
+    role = data.get("role")
 
     if not username or not password:
         return jsonify({"message": "O username e o password devem ser informados"}), 400
 
-    user = User(username=username, password=password)
+    user = User(username=username, password=password, role=role)
     db.session.add(user)
     db.session.commit()
 
@@ -78,13 +83,17 @@ def read_user(id_user):
 @login_required
 def read_users():
     users = db.session.query(User).order_by(User.username).all()
-    users_list = [{"id": user.id, "username": user.username} for user in users]
+    users_list = [{"id": user.id, "username": user.username,
+                   "role": user.role} for user in users]
     return jsonify(users_list)
 
 
 @app.route("/user/<int:id_user>", methods=["DELETE"])
 @login_required
 def delete_user(id_user):
+    if current_user.role != "admin":
+        return jsonify({"message": "Você não possui permissão para executar esta operação"}), 403
+
     user = User.query.get(id_user)
 
     if not id_user or not user:
@@ -105,6 +114,9 @@ def update_user(id_user):
     data = request.json
     password = data.get("password")
     user = User.query.get(id_user)
+
+    if id_user != current_user.id and current_user.role == "user":
+        return jsonify({"message": "Você não possui permissão para executar esta operação"}), 403
 
     if not id_user or not user:
         return jsonify({"message": "Usuário não encontrado"}), 404
